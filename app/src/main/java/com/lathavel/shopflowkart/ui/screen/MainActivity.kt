@@ -1,16 +1,18 @@
 package com.lathavel.shopflowkart.ui.screen
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.viewModels
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -58,13 +60,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.viewmodel.compose.viewModel
 import com.lathavel.shopflowkart.R
 import com.lathavel.shopflowkart.data.model.CategoryItem
 import com.lathavel.shopflowkart.data.model.ProductItem
@@ -73,12 +77,14 @@ import com.lathavel.shopflowkart.ui.theme.ShopFlowKartTheme
 import com.lathavel.shopflowkart.ui.theme.limeGreen
 
 class MainActivity : ComponentActivity() {
+
+    private val viewmodel : MainViewmodel by viewModels()
+
     @OptIn(ExperimentalMaterial3Api::class)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val viewmodel : MainViewmodel = viewModel()
             val productList by viewmodel.productList.collectAsState()
             val categoryList by viewmodel.categoryList.collectAsState()
 
@@ -104,13 +110,19 @@ class MainActivity : ComponentActivity() {
                                 }
                             },
                             actions = {
-                                IconButton(onClick = {  }) {
+                                IconButton(onClick = {
+                                    Toast.makeText(this@MainActivity, "Search is clicked", Toast.LENGTH_SHORT).show()
+                                }) {
                                     Icon(Icons.Default.Search, contentDescription = "Search")
                                 }
-                                IconButton(onClick = {  }) {
-                                    Icon(Icons.Default.Favorite, contentDescription = "Notifications")
+                                IconButton(onClick = {
+                                    Toast.makeText(this@MainActivity, "Favorite is clicked", Toast.LENGTH_SHORT).show()
+                                }) {
+                                    Icon(Icons.Default.Favorite, contentDescription = "Favorite")
                                 }
-                                IconButton(onClick = {  }) {
+                                IconButton(onClick = {
+                                    Toast.makeText(this@MainActivity, "Kart is clicked", Toast.LENGTH_SHORT).show()
+                                }) {
                                     Icon(Icons.Default.ShoppingCart, contentDescription = "More")
                                 }
                             })}
@@ -130,7 +142,7 @@ class MainActivity : ComponentActivity() {
                                 ShowCategories(categoryList)
                                 ShowNewProducts()
                                 productList.forEach {
-                                    ShowProductItems(it)
+                                    ShowProductItems(viewmodel, it)
                                 }
                             }
                         }
@@ -189,8 +201,8 @@ fun ShowBanner(){
             contentColor = Color.White
         ),
         modifier = Modifier
+            .padding(top = 2.dp, start = 20.dp, end = 20.dp)
             .fillMaxWidth()
-            .padding(top = 16.dp)
     ) {
 
         Column(modifier = Modifier
@@ -262,6 +274,7 @@ fun ShowCategories(categoryList: List<CategoryItem>) {
                 Image(
                     contentDescription = "",
                     painter = painterResource(id = category.imageUrl),
+                    contentScale = ContentScale.Crop,
                     modifier = Modifier
                         .size(80.dp)
                         .clip(CircleShape)
@@ -270,7 +283,8 @@ fun ShowCategories(categoryList: List<CategoryItem>) {
                 Text(category.categoryName,
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.fillMaxWidth())
+                    modifier = Modifier.fillMaxWidth()
+                        .align(Alignment.CenterHorizontally))
             }
 
         }
@@ -283,7 +297,7 @@ fun ShowNewProducts() {
 }
 
 @Composable
-fun ShowProductItems(productItem : ProductItem){
+fun ShowProductItems(viewmodel: MainViewmodel, productItem : ProductItem){
 
     Column(modifier = Modifier
         .fillMaxWidth()
@@ -295,7 +309,9 @@ fun ShowProductItems(productItem : ProductItem){
                     Column {
                         Row{
                             IconButton(
-                                onClick = {}
+                                onClick = {
+                                   viewmodel.updateFavorite(productItem)
+                                }
                             ) {
                                 Icon(imageVector = if (productItem.isFavorite) Icons.Rounded.Favorite
                                                          else  Icons.Rounded.FavoriteBorder,
@@ -329,7 +345,7 @@ fun ShowProductItems(productItem : ProductItem){
                                     .height(200.dp)
                             )
 
-                            ProductItemCardContent(productItem)
+                            ProductItemCardContent(productItem, viewmodel)
 
                         }
 
@@ -344,7 +360,8 @@ fun ShowProductItems(productItem : ProductItem){
 }
 
 @Composable
-fun ProductItemCardContent(productItem: ProductItem){
+fun ProductItemCardContent(productItem: ProductItem,
+                           viewmodel: MainViewmodel){
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -397,10 +414,13 @@ fun ProductItemCardContent(productItem: ProductItem){
             Row() {
                 StarRatingBar(
                     rating = productItem.rating,
-                    onRatingChanged = {})
+                    onRatingChanged = {
+                        viewmodel.updateRating(it, productItem)
+                    })
 
                 Text(
                     "${productItem.reviewCount} Reviews",
+                    modifier = Modifier.align(Alignment.CenterVertically),
                     textDecoration = TextDecoration.Underline,
                     style = MaterialTheme.typography.labelSmall,
                     fontFamily = FontFamily.Serif,
@@ -410,7 +430,9 @@ fun ProductItemCardContent(productItem: ProductItem){
 
         }
         IconButton(
-            onClick = {},
+            onClick = {
+
+            },
             modifier = Modifier
                 .padding(10.dp)
                 .clip(CircleShape)
@@ -435,8 +457,8 @@ fun ProductItemCardContent(productItem: ProductItem){
 @Composable
 fun StarRatingBar(
     maxStars: Int = 5,
-    rating: Float,
-    onRatingChanged: (Float) -> Unit
+    rating: Int,
+    onRatingChanged: (Int) -> Unit
 ) {
     Row(
         Modifier.selectableGroup(),
@@ -452,9 +474,10 @@ fun StarRatingBar(
                 contentDescription = null,
                 tint = iconTintColor,
                 modifier = Modifier
-                    .selectable(
-                        selected = isSelected,
-                        onClick = { onRatingChanged(i.toFloat()) }
+                    .clickable(
+                        //.selectable(
+                        // selected = isSelected,
+                        onClick = { onRatingChanged(i) }
                     )
                     .width(24.dp)
                     .height(24.dp)
