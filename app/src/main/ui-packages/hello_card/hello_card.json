@@ -1,0 +1,113 @@
+{
+  "name": "hello_card",
+  "version": 33,
+  "source-key": {
+    "type": "figma",
+    "file": "OO5vQAUjvLudVuVXQRJz7F",
+    "node": "4:2",
+    "version": "2221493374501021017",
+    "component-id": "d161a7a410f5d9443e63621ed4d2a3c5885362b7"
+  },
+  "default": "Hello Card",
+  "documentation": "basic hello world",
+  "design": {
+    "atoms": [
+      {
+        "type": "group",
+        "id": "top_level",
+        "root": "true"
+      },
+      {
+        "type": "image",
+        "id": "Image"
+      },
+      {
+        "type": "text",
+        "id": "Title"
+      }
+    ],
+    "modes": {
+      "Hello Card": {
+        "rules": [
+          {
+            "id": "top_level",
+            "padding": "$Hello Card padding",
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "shrink"
+              },
+              "height-constraints": {
+                "sizing-mode": "shrink"
+              }
+            },
+            "main-axis-align": "start",
+            "cross-axis-align": "start",
+            "children": [
+              "Image",
+              "Title"
+            ],
+            "item-spacing": 16.0,
+            "background-color": {
+              "alpha": 1.0,
+              "hue": 32.3076923076923,
+              "saturation": 0.051587301587301626,
+              "value": 0.9882352941176471
+            }
+          },
+          {
+            "id": "Image",
+            "size-constraints": {
+              "width-constraints": {
+                "sizing-mode": "fixed",
+                "value": 216.0
+              },
+              "height-constraints": {
+                "sizing-mode": "fixed",
+                "value": 124.0
+              }
+            },
+            "image-content": "image.jpeg",
+            "scale": "cover"
+          },
+          {
+            "id": "Title",
+            "color": {
+              "alpha": 1.0,
+              "hue": 228.0,
+              "saturation": 0.15625,
+              "value": 0.12549019607843137
+            },
+            "text-content": "Hello World",
+            "overflow": "visible",
+            "text-align": "left",
+            "text-size": 24.0,
+            "line-height": 1.219000021616618,
+            "typeface": "Montserrat"
+          }
+        ]
+      }
+    }
+  },
+  "parameters": {
+    "Hello Card padding": {
+      "data-type": "edge-data",
+      "required": false,
+      "description": "10"
+    }
+  },
+  "previews": [
+    {
+      "design": "Hello Card",
+      "size": {
+        "width": 248.0,
+        "height": 201.0
+      },
+      "parameters": {
+        "Hello Card padding": 16.0
+      }
+    }
+  ],
+  "adin-component-search-paths": [],
+  "image-search-paths": [],
+  "vector-search-paths": []
+}

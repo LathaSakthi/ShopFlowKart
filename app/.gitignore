@@ -1,1 +1,51 @@
-/build
+# Built application files
+*.apk
+*.ap_
+*.aab
+
+# Gradle build folders
+.gradle/
+build/
+**/build/
+
+# Local configuration files
+/local.properties
+/.idea/
+*.iml
+
+# Jetpack Compose preview cache
+**/.compose-cache/
+
+# Log files
+*.log
+
+# Android Studio specific
+captures/
+.externalNativeBuild/
+.cxx/
+.idea/caches
+.idea/libraries
+.idea/modules.xml
+.idea/workspace.xml
+.idea/navEditor.xml
+.idea/assetWizardSettings.xml
+.idea/.name
+
+# Keystore files (Do not commit credentials)
+*.jks
+*.keystore
+
+# OS-generated files
+.DS_Store
+Thumbs.db
+
+# Kotlin specific
+*.kotlin_module
+
+# Caching
+.cache/
+*.db
+
+# Virtual environment or dependency directories
+/.gradle/
+node_modules/

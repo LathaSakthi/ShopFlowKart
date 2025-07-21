@@ -57,4 +57,6 @@ dependencies {
     debugImplementation(libs.androidx.ui.tooling)
     debugImplementation(libs.androidx.ui.test.manifest)
     implementation ("androidx.lifecycle:lifecycle-viewmodel-compose:2.6.1")
+    implementation("com.google.accompanist:accompanist-systemuicontroller:0.34.0")
+    implementation("io.coil-kt:coil-compose:2.7.0")
 }

@@ -1,5 +1,6 @@
 package com.lathavel.shopflowkart.ui.screen
 
+import android.graphics.Bitmap
 import android.os.Bundle
 import android.widget.Toast
 import androidx.activity.ComponentActivity
@@ -13,8 +14,10 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -51,10 +54,14 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarColors
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -64,11 +71,19 @@ import androidx.compose.ui.focus.focusModifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.colorResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
+import coil.ImageLoader
+import coil.compose.AsyncImage
+import coil.compose.LocalImageLoader
+import coil.compose.rememberAsyncImagePainter
+import coil.memory.MemoryCache
+import coil.request.CachePolicy
+import com.google.accompanist.systemuicontroller.rememberSystemUiController
 import com.lathavel.shopflowkart.R
 import com.lathavel.shopflowkart.data.model.CategoryItem
 import com.lathavel.shopflowkart.data.model.ProductItem
@@ -88,18 +103,18 @@ class MainActivity : ComponentActivity() {
             val productList by viewmodel.productList.collectAsState()
             val categoryList by viewmodel.categoryList.collectAsState()
 
-            ShopFlowKartTheme {
+            ShopFlowKartTheme (dynamicColor = false){
                 Scaffold(modifier = Modifier
-                    .fillMaxSize()
-                    .background(color = Color(0xFF2A2A2A)),
+                    .fillMaxSize(),
+              //      .background(color = Color(0xFFFCA9C4)),
                     topBar = {
                         TopAppBar(
-                            colors = TopAppBarColors(
-                                containerColor = Color.DarkGray,
-                                titleContentColor = MaterialTheme.colorScheme.onPrimary,
-                                navigationIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                                actionIconContentColor = MaterialTheme.colorScheme.onPrimary,
-                                scrolledContainerColor = Color.DarkGray
+                            colors = TopAppBarDefaults.topAppBarColors(
+                                containerColor = MaterialTheme.colorScheme.primaryContainer,
+                                scrolledContainerColor = MaterialTheme.colorScheme.surfaceVariant, // Or surfaceColorAtElevation(3.dp)
+                                navigationIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer,
+                                actionIconContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                             ),
                             title = {
                                 Text("Shop")
@@ -127,30 +142,55 @@ class MainActivity : ComponentActivity() {
                                 }
                             })}
                 ) { innerPadding ->
-                    
-                        LazyColumn(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(innerPadding)
-                                .background(
-                                    color = Color.DarkGray
-                                ),
-                            verticalArrangement = Arrangement.spacedBy(16.dp)
-                        ) {
-                            item{
-                                CardCarousel()
-                                ShowCategories(categoryList)
-                                ShowNewProducts()
-                                productList.forEach {
-                                    ShowProductItems(viewmodel, it)
-                                }
-                            }
-                        }
+                    ShopFlowKartScreen(viewmodel,productList, categoryList, innerPadding)
                 }
             }
         }
     }
 }
+
+@Composable
+fun ShopFlowKartScreen(
+    viewmodel: MainViewmodel,
+    productList: List<ProductItem>,
+    categoryList: List<CategoryItem>,
+    innerPadding: PaddingValues) {
+
+    val context = LocalContext.current
+
+    val imageLoader = ImageLoader.Builder(context)
+        .bitmapConfig(Bitmap.Config.RGB_565) // uses 2 bytes/pixel instead of 4
+        .crossfade(true)
+        .memoryCachePolicy(CachePolicy.ENABLED)
+        .diskCachePolicy(CachePolicy.ENABLED)
+        .memoryCache {
+            MemoryCache.Builder(context)
+                .maxSizePercent(0.1) // Reduce memory usage
+                .build()
+        }.build()
+
+
+    LazyColumn(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)
+           /* .background(
+                color = MaterialTheme.colorScheme.background
+            )*/,
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        item {
+            CardCarousel()
+            ShowCategories(categoryList)
+            ShowNewProducts()
+        }
+
+        items(productList, key= {it.id}) { it ->
+            ShowProductItems(viewmodel, it, imageLoader)
+        }
+    }
+}
+
 
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -172,10 +212,11 @@ fun CardCarousel() {
             ShowBanner()
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(1.dp))
 
         Row(
             horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier.fillMaxWidth()
         ) {
             repeat(cardItems.size) { index ->
@@ -183,10 +224,10 @@ fun CardCarousel() {
                 Box(
                     modifier = Modifier
                         .padding(4.dp)
-                        .size(if (isSelected) 20.dp else 20.dp)
+                        .size(if (isSelected) 10.dp else 5.dp)
                         .clip(CircleShape)
-                        .background(if (isSelected) Color.Red else Color.White)
-                )
+                        .background(if (isSelected) Color.Green else Color(0xFFFD78D8))
+                ){}
             }
         }
     }
@@ -197,7 +238,7 @@ fun ShowBanner(){
     Card(
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.Black,
+            containerColor = colorResource( R.color.card_bg_color),
             contentColor = Color.White
         ),
         modifier = Modifier
@@ -209,32 +250,34 @@ fun ShowBanner(){
             .padding(10.dp)
             .fillMaxWidth()
             .wrapContentHeight()
-            .padding(20.dp)){
-            Text(text = "GET 20% OFF",
-                style = MaterialTheme.typography.titleLarge,
-                color = Color.White)
-            Text(text = "Get 20% Off",
-                style = MaterialTheme.typography.labelSmall,
-                color = Color.White)
+            .padding(1.dp)){
 
-            Spacer(modifier = Modifier.height(10.dp))
+            Row {
+                Column {
+                    Text(text = "GET 20% OFF",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = Color.White)
+                    Text(text = "on SkinCare products",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = Color.White)
 
-            Row(){
-                Text(text = "12-16 October",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = Color.Black,
-                    modifier = Modifier
-                        .background(color = limeGreen, RoundedCornerShape(18.dp))
-                        .padding(5.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
+
+                    Text(text = "12-16 October",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = Color.Black,
+                        modifier = Modifier
+                            .background(color = limeGreen, RoundedCornerShape(18.dp))
+                            .padding(5.dp))
+                }
 
                 Spacer(modifier = Modifier.weight(1f))
 
-                Image(painter = painterResource(R.drawable.categorysample),
+                Image(painter = painterResource(R.drawable.image_3),
                     modifier = Modifier
-                        .width(70.dp)
-                        .height(50.dp),
+                        .height(100.dp)
+                        .width(150.dp),
                     contentDescription = "image")
-
 
             }
         }
@@ -247,16 +290,19 @@ fun ShowBanner(){
 @Composable
 fun ShowHeading(headingName: String,
                 heading2Name: String){
+
     Row(horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
-        modifier = Modifier.padding(10.dp)){
+        modifier = Modifier.padding(top = 20.dp)){
         Text(headingName,
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.onPrimary)
+            style = MaterialTheme.typography.headlineMedium,
+            color = MaterialTheme.colorScheme.onPrimaryContainer
+        )
         Spacer(modifier = Modifier.weight(1f))
         Text(heading2Name,
             textDecoration = TextDecoration.Underline,
-            color = MaterialTheme.colorScheme.onPrimary)
+            color = MaterialTheme.colorScheme.onBackground
+        )
     }
 }
 @Composable
@@ -268,22 +314,32 @@ fun ShowCategories(categoryList: List<CategoryItem>) {
         .wrapContentHeight()) {
         items(categoryList){ category->
 
-            Column(modifier = Modifier.padding(10.dp),
+            Column(modifier = Modifier.padding(3.dp),
                 verticalArrangement = Arrangement.Center){
 
-                Image(
-                    contentDescription = "",
-                    painter = painterResource(id = category.imageUrl),
-                    contentScale = ContentScale.Crop,
+                Box(
                     modifier = Modifier
-                        .size(80.dp)
+                        .size(60.dp)
                         .clip(CircleShape)
-                        .background(color = Color.Black)
-                )
+                        .background(colorResource(R.color.card_bg_color)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Image(
+                        painter = painterResource(id = category.imageUrl),
+                        contentDescription = "",
+                        contentScale = ContentScale.Fit, // so the image doesn't stretch
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .padding(10.dp) // inner padding
+                            .clip(CircleShape)
+                    )
+                }
                 Text(category.categoryName,
                     textAlign = TextAlign.Center,
-                    color = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.fillMaxWidth()
+                 //   color = MaterialTheme.colorScheme.onPrimary,
+                    style = MaterialTheme.typography.bodyMedium,
+                    modifier = Modifier
+                        .fillMaxWidth()
                         .align(Alignment.CenterHorizontally))
             }
 
@@ -297,13 +353,15 @@ fun ShowNewProducts() {
 }
 
 @Composable
-fun ShowProductItems(viewmodel: MainViewmodel, productItem : ProductItem){
+fun ShowProductItems(viewmodel: MainViewmodel, productItem : ProductItem, imageLoader: ImageLoader){
+
+    val painter = rememberAsyncImagePainter(model = productItem.imageUrl)
 
     Column(modifier = Modifier
         .fillMaxWidth()
         .wrapContentHeight()) {
 
-            Card(modifier = Modifier.padding(10.dp)) {
+            Card(modifier = Modifier.padding(5.dp)) {
 
                 Box(modifier = Modifier.fillMaxSize()){
                     Column {
@@ -319,14 +377,14 @@ fun ShowProductItems(viewmodel: MainViewmodel, productItem : ProductItem){
                                     contentDescription = "Favorite",
                                     modifier = Modifier
                                         .clip(CircleShape)
-                                        .background(color = Color.Black)
+                                        .background(color = colorResource(R.color.card_bg_color))
                                         .padding(10.dp))
 
                             }
                             Spacer(Modifier.weight(1f))
 
                             productItem.sellerCategory?.let{
-                                ElevatedButton( colors = ButtonDefaults.buttonColors(containerColor = Color.Black),
+                                ElevatedButton( colors = ButtonDefaults.buttonColors(containerColor = colorResource(R.color.card_bg_color)),
                                     onClick = {}) {
                                     Text(text = it,
                                         color = limeGreen)
@@ -335,15 +393,22 @@ fun ShowProductItems(viewmodel: MainViewmodel, productItem : ProductItem){
 
                         }
 
-                        Column(modifier = Modifier.padding(10.dp).fillMaxSize(),
+                        Column(modifier = Modifier
+                            .padding(10.dp)
+                            .fillMaxWidth()
+                            .fillMaxHeight(),
                             horizontalAlignment = Alignment.CenterHorizontally){
 
-                            Image(
-                                contentDescription = "image",
-                                painter = painterResource(id = productItem.imageUrl), modifier = Modifier
-                                    .width(200.dp)
-                                    .height(200.dp)
-                            )
+                            CompositionLocalProvider(LocalImageLoader provides imageLoader) {
+                                AsyncImage(
+                                    model = productItem.imageUrl,
+                                    contentDescription = "product_image",
+                                    modifier = Modifier
+                                        .width(220.dp)
+                                        .height(140.dp)
+                                        .padding(5.dp)
+                                )
+                            }
 
                             ProductItemCardContent(productItem, viewmodel)
 
@@ -367,7 +432,7 @@ fun ProductItemCardContent(productItem: ProductItem,
             .fillMaxWidth()
             .wrapContentSize(),
         colors  = CardDefaults.cardColors(
-            containerColor = Color.Black
+            containerColor = colorResource(R.color.card_bg_color)
         )){
 
     Box() {
@@ -389,11 +454,11 @@ fun ProductItemCardContent(productItem: ProductItem,
 
             }
             Text( productItem.productName,
-                color = MaterialTheme.colorScheme.onPrimary
+                color = MaterialTheme.colorScheme.primary
             )
             Text(
                 "${productItem.categoryName} \u2022 ${productItem.categoryName2}",
-                color = MaterialTheme.colorScheme.onPrimary
+                color = MaterialTheme.colorScheme.primary
             )
             Row() {
                 Text(
@@ -445,7 +510,7 @@ fun ProductItemCardContent(productItem: ProductItem,
                 contentDescription = "shopping kart",
                 modifier = Modifier
                     .clip(CircleShape)
-                    .background(color = Color.Black)
+                    .background(color = colorResource(R.color.card_bg_color))
                     .padding(10.dp)
             )
 
